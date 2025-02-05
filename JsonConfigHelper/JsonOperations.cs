@@ -29,16 +29,11 @@ public class JsonOperations<T>( string settingsFileNamePath ) where T : class
     {
         try
         {
-            // Validamos que el archivo de configuración en formato JSON, si esté definido
             ArgumentNullException.ThrowIfNullOrEmpty( _settingsFileNamePath, nameof( _settingsFileNamePath ) );
 
-            // Leemos la información contenida en el archivo de configuracion indicado
             var jsonData = File.ReadAllText( _settingsFileNamePath );
-
-            // Convertimos los datos leidos del archivo a un objeto de tipo <JsonConfigFile>
             var jsonConfigData = jsonData.JsonToObject<T>();
 
-            // Realizamos una validación básica
             ArgumentNullException.ThrowIfNull( jsonConfigData, nameof( jsonConfigData ) );
 
             return Result.Ok( jsonConfigData );
@@ -52,37 +47,26 @@ public class JsonOperations<T>( string settingsFileNamePath ) where T : class
     /// <summary>
     /// Guardamos en el archivo de configuración definido en formato JSON, los datos retornados por el método delegado "updateMethod".
     /// </summary>
-    /// <param name="updateMethod">Método delegado de tipo <see cref="UpdateParamValues"/> que se invocará para
+    /// <param name="callbackUpdateMethod">Método delegado de tipo <see cref="UpdateParamValues"/> que se invocará para
     /// permitir la validación/actualización de los datos leídos en el archivo de configuración.</param>
-    /// <returns>Retornamos un <see cref="FluentResult"/> con un flag indicando TRUE si se guardó exitosamente o FALSE en caso contrario.</returns>
-    public Result<bool> SaveDataInConfigFile( UpdateParamValues updateMethod )
+    /// <returns>Retornamos un <see cref="FluentResult"/> con el resultado de la operación.</returns>
+    public Result<bool> SaveDataInConfigFile( UpdateParamValues callbackUpdateMethod )
     {
         try
         {
-            // Validamos que el archivo de configuración en formato JSON, si esté definido
             ArgumentNullException.ThrowIfNullOrEmpty( _settingsFileNamePath, nameof( _settingsFileNamePath ) );
 
-            // Leemos la información contenida en el archivo de configuracion indicado
             var jsonData = File.ReadAllText( _settingsFileNamePath );
-
-            // Convertimos los datos leidos del archivo a un objeto de tipo <JsonConfigFile>
             var jsonCurrentData = jsonData.JsonToObject<T>();
 
-            // Llamamos el método del usuario para validar y actualizar los datos del "appsettings.json"
-            var updResult = updateMethod( jsonCurrentData );
+            var updResult = callbackUpdateMethod( jsonCurrentData );
 
             if( updResult.IsSuccess )
             {
                 var jsonNewData = updResult.Value;
-
-                // Una validación inicial de los datos básicos requeridos
                 ArgumentNullException.ThrowIfNull( jsonNewData, nameof( jsonNewData ) );
 
-                // Guardamos los cambios en el archivo de configuración "appsettings.json"
-                var result = jsonNewData.JsonToFile( _settingsFileNamePath );
-
-                return result.result ? Result.Ok() :
-                    Result.Fail( $"SaveDataToConfigFile( Throws an exception => {result.exc!.Message} )" );
+                return jsonNewData.JsonToFile( _settingsFileNamePath );
             }
 
             return Result.Fail( $"SaveDataToConfigFile( {updResult.Reasons[ 0 ]} )" );

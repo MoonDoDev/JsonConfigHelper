@@ -9,14 +9,9 @@ namespace AppConfigTest;
 /// </summary>
 public class Program
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    private static ConfigFileSession s_sessionsToSave = ConfigFileSession.None;
+    private const string CONFIG_FILE_NAME = "appsettings.json";
 
-    /// <summary>
-    /// 
-    /// </summary>
+    private static ConfigFileSession s_sessionsToSave = ConfigFileSession.None;
     private static JsonConfigFile s_appSettings = new();
 
     /// <summary>
@@ -107,7 +102,7 @@ public class Program
         s_sessionsToSave = ConfigFileSession.SessionOneParams | ConfigFileSession.SessionTwoParams |
             ConfigFileSession.ServiceParams | ConfigFileSession.LoggingParams;
 
-        var settingsFilePath = Path.Combine( AppDomain.CurrentDomain.BaseDirectory, "appsettings.json" );
+        var settingsFilePath = Path.Combine( AppDomain.CurrentDomain.BaseDirectory, CONFIG_FILE_NAME );
 
         var jsonOpers = new JsonOperations<JsonConfigFile>( settingsFilePath );
         var saveResult = jsonOpers.SaveDataInConfigFile( UpdateJsonAppSettings );

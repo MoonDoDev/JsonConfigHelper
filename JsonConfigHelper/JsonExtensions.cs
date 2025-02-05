@@ -1,3 +1,4 @@
+using FluentResults;
 using Newtonsoft.Json;
 
 namespace JsonConfigHelper;
@@ -13,7 +14,7 @@ public static class JsonExtensions
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="jsonData"></param>
-    /// <returns></returns>
+    /// <returns>Retornamos un objeto de tipo <T> correspondiente al JSON suministrado.</returns>
     public static T JsonToObject<T>( this string jsonData )
     {
         JsonSerializerSettings settings = new()
@@ -32,8 +33,8 @@ public static class JsonExtensions
     /// <param name="sender"></param>
     /// <param name="fileName"></param>
     /// <param name="format"></param>
-    /// <returns></returns>
-    public static (bool result, Exception? exc) JsonToFile<T>( this T sender, string fileName, bool format = true )
+    /// <returns>Retornamos un <see cref="FluentResult"/> con el resultado de la operación.</returns>
+    public static Result<bool> JsonToFile<T>( this T sender, string fileName, bool format = true )
     {
         try
         {
@@ -44,11 +45,11 @@ public static class JsonExtensions
             };
 
             File.WriteAllText( fileName, JsonConvert.SerializeObject( sender, format ? settings : null ) );
-            return (true, null);
+            return Result.Ok();
         }
         catch( Exception ex )
         {
-            return (false, ex);
+            return Result.Fail( ex.Message );
         }
     }
 }
