@@ -5,20 +5,20 @@ Esta es una clase que nos ayuda a interactuar con los archivos de configuración
 Este proyecto esta compuesto por la clase `JsonConfigHelper`, y un programa Demo `AppConfigTest` que nos muestra cómo consumir la clase. El proyecto está estructurado de la siguiente manera:
 
 ```
-AppConfigTest \
-| Settings \
-  | JsonConfigFile      // Representa la estructura del archivo JSON.
-  | ServiceSettings     // Representa la sección "ServiceParams" del archivo JSON.
-  | SessionOneSettings  // Representa la sección "SessionOneParams" de la sección "ServiceParams".
-  | SessionTwoSettings  // Representa la sección "SessionTwoParams" de la sección "ServiceParams".
-  | CollectionSettings  // Representa la sección "CollectionParams" de la sessión "SessionTwoParams".
-| Program               // Clase estática con el método Main del programa DEMO.
-JsonConfigHelper \
-| JsonExtensions        // Clase estática con la definición de las Extensiones requeridas.
-| JsonOperations        // Clase con la implementación de la lectura/escritura del archivo JSON.
+  AppConfigTest \
+  | Settings \
+    | JsonConfigFile      // Representa la estructura del archivo JSON.
+    | ServiceSettings     // Representa la sección "ServiceParams" del archivo JSON.
+    | SessionOneSettings  // Representa la sección "SessionOneParams" de la sección "ServiceParams".
+    | SessionTwoSettings  // Representa la sección "SessionTwoParams" de la sección "ServiceParams".
+    | CollectionSettings  // Representa la sección "CollectionParams" de la sessión "SessionTwoParams".
+  | Program               // Clase estática con el método Main del programa DEMO.
+  JsonConfigHelper \
+  | JsonExtensions        // Clase estática con la definición de las Extensiones requeridas.
+  | JsonOperations        // Clase con la implementación de la lectura/escritura del archivo JSON.
 ```
 
-Para efectos de demostración se ha creado en el programa Demo, un archivo JSON de configuración **appsettings.json** con la siguiente estructura:
+Para efectos de demostración se ha creado en el programa Demo, un archivo JSON de configuracion **appsettings.json** con la siguiente estructura:
 
 ```
 {
@@ -118,15 +118,15 @@ Y al ejecutar exitosamente el programa DEMO, el archivo JSON de configuración *
 }
 ```
 
-## Características de la clase JsonConfigHelper
+## ¿Qué características tiene la clase JsonConfigHelper?
 
-- [x]  Hacemos uso de la característica Generics de C#, para definir una clase con la estructura del archivo JSON que vamos a leer/escribir, a través del parámetro `<T>`, y que para nuestro caso sería `JsonConfigFile`.
+- [x]  Hacemos uso de la característica Generics de C#, para definir la estructura del archivo JSON que vamos a leer/escribir, a través del parámetro `<T>`, y que para nuestro caso será `JsonConfigFile`.
 
-- [x]  Definimos `ConfigFileSession` el cuál es de tipo `enum` y que operamos como `[Flags]` para indicarle a la clase dinámicamente, cuáles de las secciones del archivo JSON necesitamos guardar.
+- [x]  Definimos `ConfigFileSession` el cuál es de tipo `enum` y que operamos como `[Flags]` para trabajar dinámicamente con todas o cada una de las secciones del archivo JSON de configuración.
 
-- [x]  Para retornar el resultado de las diferentes operaciones estamos utilizando el tipo `Result<T>` de [**FluentResults**](https://www.nuget.org/packages/FluentResults), el cual nos permite retornar un objeto, indicando si hubo éxito o no en la operación, evitando de esta manera lanzar/usar excepciones.
+- [x]  Para retornar el resultado de las diferentes operaciones estamos utilizando el tipo `Result<T>` de [**FluentResults**](https://www.nuget.org/packages/FluentResults), el cual nos permite retornar un objeto, indicando si hubo éxito o no en la operación, evitando de esta manera el uso de excepciones.
 
-- [x]  Por último estamos haciendo uso de los **delegates** para permitirle al usuario de la clase definir un método, a modo de **callback**, para validar/actualizar los valores de los parámetros del JSON antes de guardarlos en el archivo de configuración.
+- [x]  Por último estamos haciendo uso de los **delegates** para permitir al usuario de la clase definir un método, a modo de **callback**, para validar/actualizar los valores de los parámetros del JSON antes de guardarlos en el archivo de configuración.
 
 ## Dependencias
 
