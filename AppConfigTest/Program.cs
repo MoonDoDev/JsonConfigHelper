@@ -1,6 +1,7 @@
 using AppConfigTest.Settings;
 using FluentResults;
 using JsonConfigHelper;
+using System.Text;
 
 namespace AppConfigTest;
 
@@ -21,9 +22,13 @@ public class Program
     /// <returns></returns>
     public static Result<JsonConfigFile> UpdateJsonAppSettings( JsonConfigFile currentAppSettings )
     {
-        // Realizamos la validación de cada una de las secciones del archivo de configuración
-        ArgumentNullException.ThrowIfNull( currentAppSettings, nameof( currentAppSettings ) );
-        ArgumentNullException.ThrowIfNull( currentAppSettings.Logging, nameof( currentAppSettings.Logging ) );
+        #region Realizamos la validación de cada una de las secciones del archivo de configuración
+
+        ArgumentNullException.ThrowIfNull( currentAppSettings,
+            nameof( currentAppSettings ) );
+
+        ArgumentNullException.ThrowIfNull( currentAppSettings.Logging,
+            nameof( currentAppSettings.Logging ) );
 
         ArgumentNullException.ThrowIfNull( currentAppSettings.ServiceParams,
             nameof( currentAppSettings.ServiceParams ) );
@@ -37,6 +42,14 @@ public class Program
         ArgumentNullException.ThrowIfNull( currentAppSettings.ServiceParams.SessionTwoParams.CollectionParams,
             nameof( currentAppSettings.ServiceParams.SessionTwoParams.CollectionParams ) );
 
+        #endregion
+
+        // Instanciamos el servicio de cifrado
+        using var cipher = new EncryptionService(
+            Encoding.UTF8.GetBytes( currentAppSettings.ServiceParams.CipherSeed! ) );
+
+        #region Enseñamos los datos que contiene actualmente el archivo de configuración
+
         Console.Clear();
         Console.WriteLine( "Datos actuales antes de cambiar de configuración =>\r\n" );
         Console.WriteLine( $"Logging.LogLevel.JsonConfigHelper( {currentAppSettings.Logging.LogLevel!.JsonConfigHelper} )" );
@@ -45,50 +58,64 @@ public class Program
         Console.WriteLine( $"ServiceParams.SessionOneParams.LogFileLocation( {currentAppSettings.ServiceParams.SessionOneParams.LogFileLocation} )" );
         Console.WriteLine( $"ServiceParams.SessionTwoParams.LogFileLocation( {currentAppSettings.ServiceParams.SessionTwoParams.LogFileLocation} )" );
 
+        var oneIsEncrypted = JsonProperty.IsCoded<CollectionSettings>(
+            nameof( CollectionSettings.CollectionParamOne ) );
+
+        var twoIsEncrypted = JsonProperty.IsCoded<CollectionSettings>(
+            nameof( CollectionSettings.CollectionParamTwo ) );
+
         foreach( var value in currentAppSettings.ServiceParams.SessionTwoParams.CollectionParams )
         {
-            Console.WriteLine( $"ServiceParams.SessionTwoParams.CollectionParams[].CollectionParamOne( {value.CollectionParamOne} )" );
-            Console.WriteLine( $"ServiceParams.SessionTwoParams.CollectionParams[].CollectionParamTwo( {value.CollectionParamTwo} )" );
+            var oneValue = oneIsEncrypted ?
+                cipher.Decrypt( value.CollectionParamOne! ) : value.CollectionParamOne;
+
+            var twoValue = twoIsEncrypted ?
+                cipher.Decrypt( value.CollectionParamTwo! ) : value.CollectionParamTwo;
+
+            Console.WriteLine( $"ServiceParams.SessionTwoParams.CollectionParams[].CollectionParamOne( {oneValue} )" );
+            Console.WriteLine( $"ServiceParams.SessionTwoParams.CollectionParams[].CollectionParamTwo( {twoValue} )" );
         }
+
+        #endregion
 
         // Actualizamos la instancia local con los datos recibidos
         s_appSettings = currentAppSettings;
 
-        // Confirmamos las secciones que se desea actualizar
+        #region Realizamos las actualizaciones en las secciones requeridas
+
         if( ( s_sessionsToSave & ConfigFileSession.LoggingParams ) == ConfigFileSession.LoggingParams )
         {
-            ArgumentNullException.ThrowIfNull( s_appSettings.Logging, nameof( s_appSettings.Logging ) );
             currentAppSettings.Logging.LogLevel.JsonConfigHelper = "Warning";
             currentAppSettings.Logging.EventLog!.LogLevel!.JsonConfigHelper = "Warning";
         }
 
         if( ( s_sessionsToSave & ConfigFileSession.SessionOneParams ) == ConfigFileSession.SessionOneParams )
         {
-            ArgumentNullException.ThrowIfNull( s_appSettings.ServiceParams, nameof( s_appSettings.ServiceParams ) );
-            ArgumentNullException.ThrowIfNull( s_appSettings.ServiceParams.SessionOneParams, nameof( s_appSettings.ServiceParams.SessionOneParams ) );
-
             currentAppSettings.ServiceParams.SessionOneParams.LogFileLocation = "C:\\Temp\\SessionOneLog\\";
         }
 
         if( ( s_sessionsToSave & ConfigFileSession.SessionTwoParams ) == ConfigFileSession.SessionTwoParams )
         {
-            ArgumentNullException.ThrowIfNull( s_appSettings.ServiceParams, nameof( s_appSettings.ServiceParams ) );
-            ArgumentNullException.ThrowIfNull( s_appSettings.ServiceParams.SessionTwoParams, nameof( s_appSettings.ServiceParams.SessionTwoParams ) );
-
             currentAppSettings.ServiceParams.SessionTwoParams.LogFileLocation = "C:\\Temp\\SessionTwoLog\\";
+
             currentAppSettings.ServiceParams.SessionTwoParams.CollectionParams.Add( new CollectionSettings
             {
-                CollectionParamOne = "OneDataCollection",
-                CollectionParamTwo = "TwoDataCollection"
+                CollectionParamOne = oneIsEncrypted ?
+                    cipher.Encrypt( "OneDataCollection" ) : "OneDataCollection",
+
+                CollectionParamTwo = twoIsEncrypted ?
+                    cipher.Encrypt( "TwoDataCollection" ) : "TwoDataCollection"
             } );
         }
 
         if( ( s_sessionsToSave & ConfigFileSession.ServiceParams ) == ConfigFileSession.ServiceParams )
         {
-            ArgumentNullException.ThrowIfNull( s_appSettings.ServiceParams, nameof( s_appSettings.ServiceParams ) );
             currentAppSettings.ServiceParams.LogFileLocation = "C:\\Temp\\ServiceParamsLog\\";
         }
 
+        #endregion
+
+        // Retornamos los cambios realizados
         return Result.Ok( currentAppSettings );
     }
 
@@ -103,7 +130,6 @@ public class Program
             ConfigFileSession.ServiceParams | ConfigFileSession.LoggingParams;
 
         var settingsFilePath = Path.Combine( AppDomain.CurrentDomain.BaseDirectory, CONFIG_FILE_NAME );
-
         var jsonOpers = new JsonOperations<JsonConfigFile>( settingsFilePath );
         var saveResult = jsonOpers.SaveDataInConfigFile( UpdateJsonAppSettings );
 
@@ -115,32 +141,17 @@ public class Program
             {
                 // Como la lectura fue exitosa, obtenemos los datos leídos
                 s_appSettings = loadResult.Value;
-
-                // Validamos que las diferentes secciones del archivo de configuración esten completas
                 ArgumentNullException.ThrowIfNull( s_appSettings, nameof( s_appSettings ) );
-                ArgumentNullException.ThrowIfNull( s_appSettings.Logging, nameof( s_appSettings.Logging ) );
-
-                ArgumentNullException.ThrowIfNull( s_appSettings.ServiceParams,
-                    nameof( s_appSettings.ServiceParams ) );
-
-                ArgumentNullException.ThrowIfNull( s_appSettings.ServiceParams.SessionOneParams,
-                    nameof( s_appSettings.ServiceParams.SessionOneParams ) );
-
-                ArgumentNullException.ThrowIfNull( s_appSettings.ServiceParams.SessionTwoParams,
-                    nameof( s_appSettings.ServiceParams.SessionTwoParams ) );
-
-                ArgumentNullException.ThrowIfNull( s_appSettings.ServiceParams.SessionTwoParams.CollectionParams,
-                    nameof( s_appSettings.ServiceParams.SessionTwoParams.CollectionParams ) );
 
                 Console.WriteLine();
                 Console.WriteLine( "Datos después de actualizar la configuración =>\r\n" );
-                Console.WriteLine( $"Logging.LogLevel.JsonConfigHelper( {s_appSettings.Logging.LogLevel!.JsonConfigHelper} )" );
+                Console.WriteLine( $"Logging.LogLevel.JsonConfigHelper( {s_appSettings.Logging!.LogLevel!.JsonConfigHelper} )" );
                 Console.WriteLine( $"Logging.EventLog.LogLevel.JsonConfigHelper( {s_appSettings.Logging.EventLog!.LogLevel!.JsonConfigHelper} )" );
-                Console.WriteLine( $"ServiceParams.LogFileLocation( {s_appSettings.ServiceParams.LogFileLocation} )" );
-                Console.WriteLine( $"ServiceParams.SessionOneParams.LogFileLocation( {s_appSettings.ServiceParams.SessionOneParams.LogFileLocation} )" );
-                Console.WriteLine( $"ServiceParams.SessionTwoParams.LogFileLocation( {s_appSettings.ServiceParams.SessionTwoParams.LogFileLocation} )" );
+                Console.WriteLine( $"ServiceParams.LogFileLocation( {s_appSettings.ServiceParams!.LogFileLocation} )" );
+                Console.WriteLine( $"ServiceParams.SessionOneParams.LogFileLocation( {s_appSettings.ServiceParams.SessionOneParams!.LogFileLocation} )" );
+                Console.WriteLine( $"ServiceParams.SessionTwoParams.LogFileLocation( {s_appSettings.ServiceParams.SessionTwoParams!.LogFileLocation} )" );
 
-                foreach( var value in s_appSettings.ServiceParams.SessionTwoParams.CollectionParams )
+                foreach( var value in s_appSettings.ServiceParams.SessionTwoParams.CollectionParams! )
                 {
                     Console.WriteLine( $"ServiceParams.SessionTwoParams.CollectionParams[].CollectionParamOne( {value.CollectionParamOne} )" );
                     Console.WriteLine( $"ServiceParams.SessionTwoParams.CollectionParams[].CollectionParamTwo( {value.CollectionParamTwo} )" );
@@ -155,7 +166,5 @@ public class Program
         {
             Console.WriteLine( saveResult.Reasons[ 0 ] );
         }
-
-        Console.ReadKey();
     }
 }

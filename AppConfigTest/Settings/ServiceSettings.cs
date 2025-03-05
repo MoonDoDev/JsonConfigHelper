@@ -5,10 +5,15 @@ namespace AppConfigTest.Settings;
 /// </summary>
 public record ServiceSettings
 {
-	/// <summary>
-	/// 
-	/// </summary>
-	public bool CreateLogFile { get; set; }
+    /// <summary>
+    /// 
+    /// </summary>
+    public string? CipherSeed { get; set; }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public bool CreateLogFile { get; set; }
 
 	/// <summary>
 	/// 

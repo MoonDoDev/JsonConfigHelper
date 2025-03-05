@@ -1,17 +1,22 @@
 namespace AppConfigTest.Settings;
 
+using JsonConfigHelper;
+
 /// <summary>
 /// 
 /// </summary>
 public record CollectionSettings
 {
-	/// <summary>
-	/// 
-	/// </summary>
-	public string? CollectionParamOne { get; set; }
-	
-	/// <summary>
-	/// 
-	/// </summary>
-	public string? CollectionParamTwo { get; set; }
+    /// <summary>
+    /// 
+    /// </summary>
+    [PropertyIsCoded( true )]
+    public string? CollectionParamOne { get; set; }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    [PropertyIsCoded( false )]
+    public string? CollectionParamTwo { get; set; }
 }
+
